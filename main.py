@@ -8,14 +8,19 @@ SIZE = WIDTH, HEIGHT = 320, 569
 screen = pygame.display.set_mode(SIZE)
 clock = pygame.time.Clock()
 FPS = 60
-playing = True
+playing = False
+menu = True
 font = pygame.font.Font("FlappyBirdy.ttf", 32)
 
 # Images:
 bg_img = pygame.image.load("sprites/day_bg.png")
+title_img = pygame.image.load("sprites/title.png")
+game_over_img = pygame.image.load("sprites/game_over.png")
+tap_tap_img = pygame.image.load("sprites/tap_tap.png")
 bird0_img = pygame.image.load("sprites/bird0.png")
 pipe_img = pygame.image.load("sprites/pipe.png")
 
+pygame.display.set_icon(bird0_img)
 
 # Colors:
 WHITE = 255, 255, 255
@@ -40,11 +45,6 @@ class Bird:
     def move(self, pipes):
         global playing
         dy = 0
-
-        # Jump
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE]:
-            self.vel_y = -10
 
         # Collision with pipes
         for pair in pipes:
@@ -97,7 +97,7 @@ def new_pipe():
 
 # Returns a new pair of pipes
 def pair_of_pipes():
-    space_between_pipes = 180
+    space_between_pipes = 140
 
     pipe = new_pipe()
     opposite_pipe = Pipe(pipe.x, pipe.y - pipe.height - space_between_pipes)
@@ -113,8 +113,18 @@ def draw_screen(bird, pipes):
         for pipe in pair:
             pipe.draw_pipe()
 
-    score = font.render(str(bird.score), True, BLACK)
-    screen.blit(score, (WIDTH // 2 - 5, 20))
+    if menu:
+        screen.blit(title_img, (WIDTH//2 - title_img.get_width()//2, HEIGHT//5))
+    else:
+        score = font.render(str(bird.score), True, BLACK)
+        screen.blit(score, (WIDTH // 2 - 5, 20))
+
+    # Game over
+    if not playing:
+        screen.blit(tap_tap_img, (WIDTH // 2 - tap_tap_img.get_width() // 2, HEIGHT // 2 + tap_tap_img.get_height()))
+
+        if not menu:
+            screen.blit(game_over_img, (WIDTH // 2 - game_over_img.get_width() // 2, HEIGHT // 5))
 
     pygame.display.update()
 
@@ -136,7 +146,7 @@ def update_screen(bird, pipes):
 
 def main():
     running = True
-    global playing
+    global playing, menu
 
     bird = Bird(WIDTH // 2, HEIGHT // 2, 0)
     pipes = [pair_of_pipes()]
@@ -153,13 +163,23 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-            # If the game is over and yhe player press the SPACE key -> Restart Game
-            if not playing and event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
-                if keys[pygame.K_SPACE]:
+                if keys[pygame.K_SPACE]:  # Jump
+                    if not playing:
+                        playing = True
+                        menu = False
+                        bird = Bird(WIDTH // 2, HEIGHT // 2, 0)
+                        pipes = [pair_of_pipes()]
+                    bird.vel_y = -10
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if not playing:  # Jump
                     playing = True
+                    menu = False
                     bird = Bird(WIDTH // 2, HEIGHT // 2, 0)
                     pipes = [pair_of_pipes()]
+                bird.vel_y = -10
 
     pygame.quit()
 
