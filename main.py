@@ -26,6 +26,12 @@ pygame.display.set_icon(bird0_img)
 WHITE = 255, 255, 255
 BLACK = 0, 0, 0
 
+# Load sounds
+point_sound = pygame.mixer.Sound("sounds/sfx_point.wav")
+hit_sound = pygame.mixer.Sound("sounds/sfx_hit.wav")
+die_sound = pygame.mixer.Sound("sounds/sfx_die.wav")
+wing_sound = pygame.mixer.Sound("sounds/sfx_wing.wav")
+
 
 class Bird:
     def __init__(self, x, y, score):
@@ -51,14 +57,17 @@ class Bird:
             for pipe in pair:
                 if self.rect.colliderect(pipe.rect):
                     playing = False
+                    hit_sound.play()
 
         # Collision with top/bottom of the screen
         if self.rect.bottom >= HEIGHT or self.rect.top <= 0:
             playing = False
+            die_sound.play()
 
         # When it goes through a pair of pipes, gets a point
         if self.x == pipes[0][0].x + pipes[0][0].width//2:
             self.score += 1
+            point_sound.play()
 
         # "GRAVITY"
         self.vel_y += 1
@@ -166,6 +175,7 @@ def main():
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_SPACE]:  # Jump
+                    wing_sound.play()
                     if not playing:
                         playing = True
                         menu = False
@@ -174,6 +184,7 @@ def main():
                     bird.vel_y = -10
 
             if event.type == pygame.MOUSEBUTTONDOWN:
+                wing_sound.play()
                 if not playing:  # Jump
                     playing = True
                     menu = False
