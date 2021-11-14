@@ -1,5 +1,7 @@
 import pygame
 from random import choice
+
+# Initialize pygame
 pygame.init()
 pygame.display.set_caption("Flappy Bird - by Jesus")
 
@@ -10,15 +12,16 @@ clock = pygame.time.Clock()
 FPS = 60
 playing = False
 menu = True
-font = pygame.font.Font("FlappyBirdy.ttf", 32)
+font = pygame.font.Font("./resources/FlappyBirdy.ttf", 32)
+jump_offset = -10
 
 # Images:
-bg_img = pygame.image.load("sprites/day_bg.png")
-title_img = pygame.image.load("sprites/title.png")
-game_over_img = pygame.image.load("sprites/game_over.png")
-tap_tap_img = pygame.image.load("sprites/tap_tap.png")
-bird0_img = pygame.image.load("sprites/bird0.png")
-pipe_img = pygame.image.load("sprites/pipe.png")
+bg_img = pygame.image.load("./resources/sprites/day_bg.png")
+title_img = pygame.image.load("./resources/sprites/title.png")
+game_over_img = pygame.image.load("./resources/sprites/game_over.png")
+tap_tap_img = pygame.image.load("./resources/sprites/tap_tap.png")
+bird0_img = pygame.image.load("./resources/sprites/bird0.png")
+pipe_img = pygame.image.load("./resources/sprites/pipe.png")
 
 pygame.display.set_icon(bird0_img)
 
@@ -27,10 +30,10 @@ WHITE = 255, 255, 255
 BLACK = 0, 0, 0
 
 # Load sounds
-point_sound = pygame.mixer.Sound("sounds/sfx_point.wav")
-hit_sound = pygame.mixer.Sound("sounds/sfx_hit.wav")
-die_sound = pygame.mixer.Sound("sounds/sfx_die.wav")
-wing_sound = pygame.mixer.Sound("sounds/sfx_wing.wav")
+point_sound = pygame.mixer.Sound("./resources/sounds/sfx_point.wav")
+hit_sound = pygame.mixer.Sound("./resources/sounds/sfx_hit.wav")
+die_sound = pygame.mixer.Sound("./resources/sounds/sfx_die.wav")
+wing_sound = pygame.mixer.Sound("./resources/sounds/sfx_wing.wav")
 
 
 class Bird:
@@ -45,7 +48,10 @@ class Bird:
         self.score = score
 
     def draw_bird(self):
-        screen.blit(self.img, (self.x - self.width // 2, self.y))
+        rotation = 15
+        if self.vel_y > 0:
+            rotation = -15
+        screen.blit(pygame.transform.rotate(self.img, rotation), (self.x - self.width // 2, self.y))
         # pygame.draw.rect(screen, WHITE, self.rect, 1)
 
     def move(self, pipes):
@@ -57,15 +63,17 @@ class Bird:
             for pipe in pair:
                 if self.rect.colliderect(pipe.rect):
                     playing = False
+                    self.go_to_initial_position()
                     hit_sound.play()
 
         # Collision with top/bottom of the screen
         if self.rect.bottom >= HEIGHT or self.rect.top <= 0:
             playing = False
+            self.go_to_initial_position()
             die_sound.play()
 
         # When it goes through a pair of pipes, gets a point
-        if self.x == pipes[0][0].x + pipes[0][0].width//2:
+        if self.x == pipes[0][0].x + pipes[0][0].width // 2:
             self.score += 1
             point_sound.play()
 
@@ -77,7 +85,11 @@ class Bird:
 
         # Updating y and rect
         self.y += dy
-        self.rect.topleft = (self.x - self.width//2, self.y)
+        self.rect.topleft = (self.x - self.width // 2, self.y)
+
+    def go_to_initial_position(self):
+        self.x = WIDTH // 2
+        self.y = HEIGHT // 2
 
 
 class Pipe:
@@ -115,6 +127,7 @@ def pair_of_pipes():
     return pipe, opposite_pipe
 
 
+# Draws the screen
 def draw_screen(bird, pipes):
     screen.blit(bg_img, (0, 0))
     bird.draw_bird()
@@ -123,7 +136,7 @@ def draw_screen(bird, pipes):
             pipe.draw_pipe()
 
     if menu:
-        screen.blit(title_img, (WIDTH//2 - title_img.get_width()//2, HEIGHT//5))
+        screen.blit(title_img, (WIDTH // 2 - title_img.get_width() // 2, HEIGHT // 5))
     else:
         score = font.render(str(bird.score), True, BLACK)
         screen.blit(score, (WIDTH // 2 - 5, 20))
@@ -138,6 +151,7 @@ def draw_screen(bird, pipes):
     pygame.display.update()
 
 
+# Updates the screen
 def update_screen(bird, pipes):
     bird.move(pipes)
 
@@ -153,6 +167,7 @@ def update_screen(bird, pipes):
         pipes.remove(pipes[0])
 
 
+# Game entry point
 def main():
     running = True
     global playing, menu
@@ -172,25 +187,17 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-            if event.type == pygame.KEYDOWN:
-                keys = pygame.key.get_pressed()
-                if keys[pygame.K_SPACE]:  # Jump
-                    wing_sound.play()
-                    if not playing:
-                        playing = True
-                        menu = False
-                        bird = Bird(WIDTH // 2, HEIGHT // 2, 0)
-                        pipes = [pair_of_pipes()]
-                    bird.vel_y = -10
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            # Jump or start playing
+            if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.KEYDOWN and not pygame.key.get_pressed()[pygame.K_SPACE]:
+                    continue
                 wing_sound.play()
-                if not playing:  # Jump
+                if not playing:
                     playing = True
                     menu = False
-                    bird = Bird(WIDTH // 2, HEIGHT // 2, 0)
                     pipes = [pair_of_pipes()]
-                bird.vel_y = -10
+                else:
+                    bird.vel_y = jump_offset
 
     pygame.quit()
 
